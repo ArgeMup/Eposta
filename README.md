@@ -96,15 +96,15 @@ Many thanks to the team of the [MailKit project](https://github.com/jstedfast/Ma
             Kalıcı Olarak Sil 1 / <Klasör Adı> / UID1
             Kalıcı Olarak Sil ArGeMuP / <Klasör Adı> / UID2 gibi
         Cevaplar / <Son Çalıştırılma Tarihi>    
-            Gönder / Başarılı veya Hatalı
-            Kalıcı Olarak Sil / Başarılı veya Hatalı
-            Okundu Olarak İşaretle / Başarılı veya Hatalı
-            Okunmadı Olarak İşaretle / Başarılı veya Hatalı
-            Taşı / Başarılı veya Hatalı / Yeni UID
-            Klasörleri Listele / Başarılı veya Hatalı
+            Gönder / Başarılı veya Hatalı / Hata Açıklaması
+            Kalıcı Olarak Sil / Başarılı veya Hatalı / Hata Açıklaması
+            Okundu Olarak İşaretle / Başarılı veya Hatalı / Hata Açıklaması
+            Okunmadı Olarak İşaretle / Başarılı veya Hatalı / Hata Açıklaması
+            Taşı / Başarılı veya Hatalı / Yeni UID veya Hata Açıklaması
+            Klasörleri Listele / Başarılı veya Hatalı / Hata Açıklaması
                 Klasör1 / <Okunmamış eposta sayısı> / <Toplam eposta sayısı> / <Yeni gelen eposta sayısı> / <Klasör boyutu - bayt>
                 Klasör2 ...
-            Epostaları Yenile / Başarılı veya Hatalı
+            Epostaları Yenile / Başarılı veya Hatalı / Hata Açıklaması
 
     Çıktıları Kaydetme Klasörü / Epostaları Yenile / Klasör Adı / Depo.mup (Komutlar çalıştırıldıktan sonra güncel duruma göre üretilir)
         Tipi / Epostaları Yenile / <Klasör Adı> / <Son Çalıştırılma Tarihi>

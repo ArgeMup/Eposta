@@ -183,7 +183,7 @@ namespace Eposta
             IMailFolder mf = KlasörüAç(KlasörAdı, false);
             Depo_ depo = _EpostalarıYenile_DepoDosyasınıAç_UIDyiSil_(KlasörAdı);
             depo["Tipi"].İçeriği = new string[] { "EpostalarıYenile", _KlasörAdıBoşİseDüzelt_(KlasörAdı), DateTime.Now.Yazıya() };
-            string EkDosyaslarıKlasörü = Path.GetDirectoryName(_EpostalarıYenile_DepoDosyasıAdı_(KlasörAdı)) + "\\";
+            string ÇıktıDosyalarıKlasörü = Path.GetDirectoryName(_EpostalarıYenile_DepoDosyasıAdı_(KlasörAdı)) + "\\";
             List<string> İstenen_uid_ler = new List<string>();
 
             foreach (IMessageSummary summary in mf.Fetch(0, -1, new FetchRequest(MessageSummaryItems.UniqueId | MessageSummaryItems.Flags | MessageSummaryItems.InternalDate)))
@@ -248,12 +248,12 @@ namespace Eposta
                             string asıl_adı = D_DosyaKlasörAdı.Düzelt(Girdi.ContentDisposition?.FileName ?? Girdi.ContentType.Name);
                             if (string.IsNullOrWhiteSpace(asıl_adı)) return;
 
-                            Klasör.Oluştur(EkDosyaslarıKlasörü + kimlik);
+                            Klasör.Oluştur(ÇıktıDosyalarıKlasörü + kimlik);
                             string kontrol_edilmiş_adı = asıl_adı;
                             int no = 0;
-                            while (File.Exists(EkDosyaslarıKlasörü + kimlik + "\\" + kontrol_edilmiş_adı)) kontrol_edilmiş_adı = "_" + no++ + "_" + asıl_adı;
+                            while (File.Exists(ÇıktıDosyalarıKlasörü + kimlik + "\\" + kontrol_edilmiş_adı)) kontrol_edilmiş_adı = "_" + no++ + "_" + asıl_adı;
 
-                            uid["Ekler/" + EkDosyaslarıKlasörü + kimlik + "\\" + kontrol_edilmiş_adı].İçeriği = new string[] { asıl_adı, Girdi.IsAttachment.ToString(), Girdi.ContentType.MediaType + "/" + Girdi.ContentType.MediaSubtype, Girdi.ContentId };
+                            uid["Ekler/" + ÇıktıDosyalarıKlasörü + kimlik + "\\" + kontrol_edilmiş_adı].İçeriği = new string[] { asıl_adı, Girdi.IsAttachment.ToString(), Girdi.ContentType.MediaType + "/" + Girdi.ContentType.MediaSubtype, Girdi.ContentId };
 
                             using (MemoryStream stream = new MemoryStream())
                             {
@@ -270,7 +270,7 @@ namespace Eposta
 
                                 byte[] çıktı_e = stream.ToArray();
                                 if (ParolaAes != null) çıktı_e = çıktı_e.Karıştır(ParolaAes);
-                                File.WriteAllBytes(EkDosyaslarıKlasörü + kimlik + "\\" + kontrol_edilmiş_adı, çıktı_e);
+                                File.WriteAllBytes(ÇıktıDosyalarıKlasörü + kimlik + "\\" + kontrol_edilmiş_adı, çıktı_e);
                             }
                         }
                     }
@@ -284,22 +284,25 @@ namespace Eposta
                 biri.Sil(null);
             }
 
-            foreach (string kls in Directory.GetDirectories(EkDosyaslarıKlasörü, "_*", SearchOption.TopDirectoryOnly))
+            if (!Directory.Exists(ÇıktıDosyalarıKlasörü)) Klasör.Oluştur(ÇıktıDosyalarıKlasörü);
+            else
             {
-                if (!EkleriAl) Klasör.Sil(kls);
-                else
+                foreach (string kls in Directory.GetDirectories(ÇıktıDosyalarıKlasörü, "_*", SearchOption.TopDirectoryOnly))
                 {
-                    int knm = kls.LastIndexOf("\\_");
-                    if (knm < 0) continue;
+                    if (!EkleriAl) Klasör.Sil(kls);
+                    else
+                    {
+                        int knm = kls.LastIndexOf("\\_");
+                        if (knm < 0) continue;
 
-                    string uid_ = kls.Substring(knm + 2);
-                    if (depo.Oku("Liste/" + uid_).BoşMu()) Klasör.Sil(kls);
+                        string uid_ = kls.Substring(knm + 2);
+                        if (depo.Oku("Liste/" + uid_).BoşMu()) Klasör.Sil(kls);
+                    }
                 }
             }
-
+            
             byte[] çıktı_d = depo.YazıyaDönüştür().BaytDizisine();
             if (ParolaAes != null) çıktı_d = çıktı_d.Karıştır(ParolaAes);
-            Klasör.Oluştur(EkDosyaslarıKlasörü);
             File.WriteAllBytes(_EpostalarıYenile_DepoDosyasıAdı_(KlasörAdı), çıktı_d);
         }
         public void İşaretle(string KlasörAdı, uint UID, bool Okundu)

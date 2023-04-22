@@ -2,6 +2,11 @@
 using System.IO;
 using System;
 using ArgeMup.HazirKod.Ekİşlemler;
+using System.Linq;
+using MimeKit;
+using MailKit;
+using ArgeMup.HazirKod.Dönüştürme;
+using System.Collections.Generic;
 
 namespace Eposta
 {
@@ -27,7 +32,8 @@ namespace Eposta
         public int ErişimNoktası;
         public bool SSL;
 
-        public Gönderici_(string Adı, string EpostaAdresi, string Parola, string SunucuAdresi, int ErişimNoktası = 465, bool SSL = true)
+        //SSL 465
+        public Gönderici_(string Adı, string EpostaAdresi, string Parola, string SunucuAdresi, int ErişimNoktası, bool SSL)
         {
             this.Adı = Adı;
             this.EpostaAdresi = EpostaAdresi;
@@ -38,15 +44,10 @@ namespace Eposta
             this.SSL = SSL;
         }
 
-        public string Gönder(string Kime, string Bilgi, string Gizli, string Konu, string Mesaj_Html = null, string Mesaj = null, string[] DosyaEkleri = null)
+        public void Gönder(string Kime, string Bilgi, string Gizli, string Konu, string Mesaj_Html = null, string Mesaj = null, string[] DosyaEkleri = null)
         {
-            string sonuç = null;
-            MimeKit.MimeMessage message = null;
-            MailKit.Net.Smtp.SmtpClient client = null;
-
-            try
+            using (MimeMessage message = new MimeMessage())
             {
-                message = new MimeKit.MimeMessage();
                 message.From.Add(new MimeKit.MailboxAddress(Adı, EpostaAdresi));
                 if (Konu != null) message.Subject = Konu;
 
@@ -54,36 +55,33 @@ namespace Eposta
                 if (Bilgi != null) { foreach (var biri in Bilgi.Split(';')) { message.To.Add(new MimeKit.MailboxAddress(null, biri)); } }
                 if (Gizli != null) { foreach (var biri in Gizli.Split(';')) { message.To.Add(new MimeKit.MailboxAddress(null, biri)); } }
 
-                MimeKit.BodyBuilder builder = new MimeKit.BodyBuilder();
+                BodyBuilder builder = new BodyBuilder();
                 if (Mesaj != null) builder.TextBody = Mesaj;
                 if (Mesaj_Html != null) builder.HtmlBody = Mesaj_Html;
                 if (DosyaEkleri != null) { foreach (var biri in DosyaEkleri) builder.Attachments.Add(biri); }
                 message.Body = builder.ToMessageBody();
 
-                client = new MailKit.Net.Smtp.SmtpClient();
-                client.Connect(SunucuAdresi, ErişimNoktası, SSL);
-                client.Authenticate(EpostaAdresi, Parola);
-                client.Send(message);
-                client.Disconnect(true);
+                using (MailKit.Net.Smtp.SmtpClient client = new MailKit.Net.Smtp.SmtpClient())
+                {
+                    client.Connect(SunucuAdresi, ErişimNoktası, SSL);
+                    client.Authenticate(EpostaAdresi, Parola);
+                    client.Send(message);
+                    client.Disconnect(true);
+                }
             }
-            catch (System.Exception ex) { sonuç = ex.Message; }
-
-            message?.Dispose();
-            client?.Dispose();
-
-            return sonuç;
         }
     }
 
     public class Alıcı_ : IDisposable
     {
-        public string EpostaAdresi, Parola, SunucuAdresi, İndirmeKlasörü;
+        public string EpostaAdresi, Parola, SunucuAdresi, ÇıktılarıKaydetmeKlasörü;
         public int ErişimNoktası;
         public bool SSL;
+        byte[] ParolaAes;
         MailKit.Net.Imap.ImapClient İstemci = null;
-        MailKit.IMailFolder GelenKutusu;
 
-        public Alıcı_(string EpostaAdresi, string Parola, string SunucuAdresi, int ErişimNoktası = 993, bool SSL = true, string İndirmeKlasörü = null)
+        //SSL 993
+        public Alıcı_(string EpostaAdresi, string Parola, string SunucuAdresi, int ErişimNoktası, bool SSL, string ÇıktılarıKaydetmeKlasörü, byte[] ParolaAes)
         {
             this.EpostaAdresi = EpostaAdresi;
             this.Parola = Parola;
@@ -92,56 +90,146 @@ namespace Eposta
             this.ErişimNoktası = ErişimNoktası;
             this.SSL = SSL;
 
-            this.İndirmeKlasörü = İndirmeKlasörü == null ? Kendi.Klasörü + @"\Epostalar" : İndirmeKlasörü;
+            this.ParolaAes = ParolaAes; //Çıktıları şifrelemek için
 
-            Directory.CreateDirectory(this.İndirmeKlasörü);
-            this.İndirmeKlasörü += @"\";
+            this.ÇıktılarıKaydetmeKlasörü = ÇıktılarıKaydetmeKlasörü.BoşMu() ? Kendi.Klasörü + @"\Çıktılar" : ÇıktılarıKaydetmeKlasörü;
+
+            Directory.CreateDirectory(this.ÇıktılarıKaydetmeKlasörü);
+            this.ÇıktılarıKaydetmeKlasörü += @"\";
         }
-        void Bağlan(bool SadeceOkunabilir = true)
+        IMailFolder KlasörüAç(string KlasörAdı, bool YazmaİzniGerekiyor)
         {
-            bool YenidenBağlan = false;
-            if (İstemci == null || !İstemci.IsConnected || GelenKutusu == null || !GelenKutusu.IsOpen) YenidenBağlan = true;
-            else if (!SadeceOkunabilir && GelenKutusu.Access != MailKit.FolderAccess.ReadWrite) { YenidenBağlan = true; İstemci.Disconnect(true); }
-
-            if (YenidenBağlan)
+            if (İstemci == null || !İstemci.IsConnected)
             {
                 İstemci = new MailKit.Net.Imap.ImapClient();
                 İstemci.Connect(SunucuAdresi, ErişimNoktası, SSL);
                 İstemci.Authenticate(EpostaAdresi, Parola);
-
-                GelenKutusu = İstemci.Inbox;
-                GelenKutusu.Open(SadeceOkunabilir ? MailKit.FolderAccess.ReadOnly : MailKit.FolderAccess.ReadWrite);
             }
+
+            IMailFolder mf;
+            if (KlasörAdı.BoşMu(true)) mf = İstemci.Inbox;
+            else
+            {
+                string[] dizi = KlasörAdı.Split(İstemci.Inbox.DirectorySeparator);
+                if (dizi == null || dizi.Length != 2) throw new Exception("Hatalı Klasör Adı " + KlasörAdı);
+
+                FolderNamespace fns = İstemci.PersonalNamespaces.First(x => x.Path == dizi[0]);
+                if (fns == null) throw new Exception("Hatalı Klasör Adı " + KlasörAdı);
+
+                mf = İstemci.GetFolder(fns);
+                if (mf == null) throw new Exception("Hatalı Klasör Adı " + KlasörAdı);
+
+                mf = mf.GetSubfolders(false).First(x => x.FullName == dizi[1]);
+            }
+
+            if (mf == null) throw new Exception("Hatalı Klasör Adı " + KlasörAdı);
+            if (YazmaİzniGerekiyor && mf.IsOpen && mf.Access != FolderAccess.ReadWrite) mf.Close();
+            if (!mf.IsOpen) mf.Open(YazmaİzniGerekiyor ? FolderAccess.ReadWrite : FolderAccess.ReadOnly);
+
+            if (!mf.IsOpen) throw new Exception("Klasör açılamadı " + KlasörAdı);
+            else if (YazmaİzniGerekiyor && mf.Access != FolderAccess.ReadWrite) throw new Exception("Klasör okuma yazma izni ile açılamadı " + KlasörAdı);
+
+            return mf;
         }
 
-        public void Listele(byte[] ParolaAes, bool SadeceOkunmamışlar, DateTime Başlangıç, DateTime Bitiş, bool EkleriAl)
+        public void KlasörleriListele(IDepo_Eleman KomutMupCevaplarKomutDalı, bool Detaylar)
         {
-            Bağlan();
- 
-            System.Collections.Generic.List<string> MevcutEpostalar = new System.Collections.Generic.List<string>();
-            foreach (MailKit.IMessageSummary summary in GelenKutusu.Fetch(0, -1, new MailKit.FetchRequest(MailKit.MessageSummaryItems.UniqueId | MailKit.MessageSummaryItems.Flags | MailKit.MessageSummaryItems.InternalDate)))
+            KlasörüAç(null, false);
+            foreach (var kls in İstemci.PersonalNamespaces)
             {
-                if (SadeceOkunmamışlar && summary.Flags.Value.HasFlag(MailKit.MessageFlags.Seen)) continue;
-                if (summary.Date.DateTime < Başlangıç || summary.Date.DateTime > Bitiş) continue;
+                IMailFolder mf = İstemci.GetFolder(kls);
 
-                string kimlik = "_" + summary.UniqueId.Id.ToString();
-                MevcutEpostalar.Add(İndirmeKlasörü + kimlik);
-                if (Directory.Exists(İndirmeKlasörü + kimlik)) continue;
-                Directory.CreateDirectory(İndirmeKlasörü + kimlik);
+                foreach (IMailFolder mf_alt in mf.GetSubfolders(false))
+                {
+                    int Toplam = -1, Okunmadı = -1, YeniGelen = -1;
+                    ulong Boyut = 0;
 
-                MimeKit.MimeMessage içerik = GelenKutusu.GetMessage(summary.UniqueId);
+                    if (Detaylar)
+                    {
+                        if (!mf_alt.IsOpen) mf_alt.Open(FolderAccess.ReadOnly);
+                        mf_alt.Status(StatusItems.Count | StatusItems.Recent | StatusItems.Unread | StatusItems.Size);
 
-                Depo_ depo = new Depo_();
-                depo.Yaz("Kontrol Edildi", DateTime.Now);
-                IDepo_Eleman uid = depo[summary.UniqueId.Id.ToString()];
-                uid.İçeriği = new string[] { 
+                        Toplam = mf_alt.Count;
+                        Okunmadı = mf_alt.Unread;
+                        YeniGelen = mf_alt.Recent;
+                        Boyut = mf_alt.Size == null ? 0 : mf_alt.Size.Value;
+                    }
+
+                    KomutMupCevaplarKomutDalı[kls.Path + kls.DirectorySeparator + mf_alt.FullName].İçeriği = new string[] { Okunmadı.Yazıya(), Toplam.Yazıya(), YeniGelen.Yazıya(), Boyut.ToString() };
+                }
+            }
+        }
+        string _KlasörAdıBoşİseDüzelt_(string KlasörAdı)
+        {
+            return KlasörAdı.BoşMu(true) ? "Gelen Kutusu" : KlasörAdı;
+        }
+        string _EpostalarıYenile_DepoDosyasıAdı_(string KlasörAdı)
+        {
+            return D_DosyaKlasörAdı.Düzelt(ÇıktılarıKaydetmeKlasörü + "Epostaları Yenile\\" + _KlasörAdıBoşİseDüzelt_(KlasörAdı) + "\\Depo.mup");
+        }
+        Depo_ _EpostalarıYenile_DepoDosyasınıAç_UIDyiSil_(string KlasörAdı, string UID = null)
+        {
+            string çıktı_dosyası_adı = _EpostalarıYenile_DepoDosyasıAdı_(KlasörAdı);
+            byte[] çıktı_dosyası_İçeriği = File.Exists(çıktı_dosyası_adı) ? File.ReadAllBytes(çıktı_dosyası_adı) : null;
+            if (çıktı_dosyası_İçeriği != null && ParolaAes != null) çıktı_dosyası_İçeriği = çıktı_dosyası_İçeriği.Düzelt(ParolaAes);
+            Depo_ depo = new Depo_(çıktı_dosyası_İçeriği?.Yazıya());
+            
+            if (UID.DoluMu()) depo.Sil("Liste/" + UID);
+
+            return depo;
+        }
+        public void EpostalarıYenile(string KlasörAdı, bool SadeceOkunmamışlar, DateTime Başlangıç, DateTime Bitiş, bool EkleriAl)
+        {
+            IMailFolder mf = KlasörüAç(KlasörAdı, false);
+            Depo_ depo = _EpostalarıYenile_DepoDosyasınıAç_UIDyiSil_(KlasörAdı);
+            depo["Tipi"].İçeriği = new string[] { "EpostalarıYenile", _KlasörAdıBoşİseDüzelt_(KlasörAdı), DateTime.Now.Yazıya() };
+            string EkDosyaslarıKlasörü = Path.GetDirectoryName(_EpostalarıYenile_DepoDosyasıAdı_(KlasörAdı)) + "\\";
+            List<string> İstenen_uid_ler = new List<string>();
+
+            foreach (IMessageSummary summary in mf.Fetch(0, -1, new FetchRequest(MessageSummaryItems.UniqueId | MessageSummaryItems.Flags | MessageSummaryItems.InternalDate)))
+            {
+                string kimlik = summary.UniqueId.Id.ToString();
+
+                if ((SadeceOkunmamışlar && summary.Flags.Value.HasFlag(MessageFlags.Seen)) ||
+                    summary.Date.DateTime < Başlangıç ||
+                    summary.Date.DateTime > Bitiş)
+                {
+                    depo.Sil("Liste/" + kimlik);
+                    continue; //istenmiyor
+                }
+
+                //isteniyor
+                İstenen_uid_ler.Add(kimlik);
+                IDepo_Eleman uid = depo["Liste/" + summary.UniqueId.Id.ToString()];
+                
+                if (depo.Oku("Liste/" + kimlik).DoluMu())
+                {
+                    uid.Yaz(null, summary.Date.DateTime, 0);
+                    uid.Yaz(null, summary.Flags?.ToString(), 1);
+                    continue; //isteniyor fakat zaten indirilmiş
+                }
+                kimlik = "_" + kimlik;
+
+                MimeMessage içerik = mf.GetMessage(summary.UniqueId);
+                uid.İçeriği = new string[] {
                     içerik.Date.DateTime.Yazıya(),
-                    (içerik.Sender == null ? içerik.From[0].ToString() : içerik.Sender.Name + " " + içerik.Sender.Address).Trim(),
                     summary.Flags?.ToString(),
                     içerik.Subject };
+
+                MailboxAddress Gönderen = null;
+                if (içerik.Sender != null) Gönderen = içerik.Sender;
+                else if (içerik.From.Mailboxes != null && içerik.From.Mailboxes.Count() > 0) Gönderen = içerik.From.Mailboxes.First();
+                if (Gönderen != null)
+                {
+                    uid[3] = Gönderen.Address;
+                    uid[4] = Gönderen.Name;
+                }
+                else uid[3] = içerik.From.ToString();
+                
                 uid["Mesaj"].İçeriği = new string[] { içerik.HtmlBody, içerik.TextBody };
-                    
-                if (EkleriAl)
+
+                if (!EkleriAl) uid.Sil("Ekler");
+                else
                 {
                     _DosyaEkiAra_(içerik.Body);
                     void _DosyaEkiAra_(MimeKit.MimeEntity Girdi)
@@ -157,65 +245,89 @@ namespace Eposta
                         }
                         else
                         {
-                            string asıl_adı = ArgeMup.HazirKod.Dönüştürme.D_DosyaKlasörAdı.Düzelt(Girdi.ContentDisposition?.FileName ?? Girdi.ContentType.Name);
+                            string asıl_adı = D_DosyaKlasörAdı.Düzelt(Girdi.ContentDisposition?.FileName ?? Girdi.ContentType.Name);
                             if (string.IsNullOrWhiteSpace(asıl_adı)) return;
 
+                            Klasör.Oluştur(EkDosyaslarıKlasörü + kimlik);
                             string kontrol_edilmiş_adı = asıl_adı;
                             int no = 0;
-                            while (File.Exists(İndirmeKlasörü + kimlik + "\\" + kontrol_edilmiş_adı)) kontrol_edilmiş_adı = "_" + no++ + "_" + asıl_adı;
+                            while (File.Exists(EkDosyaslarıKlasörü + kimlik + "\\" + kontrol_edilmiş_adı)) kontrol_edilmiş_adı = "_" + no++ + "_" + asıl_adı;
 
-                            uid["Ekler/" + kontrol_edilmiş_adı].İçeriği = new string[] { asıl_adı, Girdi.IsAttachment.ToString(), Girdi.ContentType.MediaType + "/" + Girdi.ContentType.MediaSubtype, Girdi.ContentId };
+                            uid["Ekler/" + EkDosyaslarıKlasörü + kimlik + "\\" + kontrol_edilmiş_adı].İçeriği = new string[] { asıl_adı, Girdi.IsAttachment.ToString(), Girdi.ContentType.MediaType + "/" + Girdi.ContentType.MediaSubtype, Girdi.ContentId };
 
                             using (MemoryStream stream = new MemoryStream())
                             {
-                                if (Girdi is MimeKit.MessagePart)
+                                if (Girdi is MessagePart)
                                 {
-                                    MimeKit.MessagePart rfc822 = (MimeKit.MessagePart)Girdi;
-
+                                    MessagePart rfc822 = (MessagePart)Girdi;
                                     rfc822.Message.WriteTo(stream);
                                 }
                                 else
                                 {
-                                    MimeKit.MimePart part = (MimeKit.MimePart)Girdi;
-
+                                    MimePart part = (MimePart)Girdi;
                                     part.Content.DecodeTo(stream);
                                 }
 
                                 byte[] çıktı_e = stream.ToArray();
-
                                 if (ParolaAes != null) çıktı_e = çıktı_e.Karıştır(ParolaAes);
-
-                                File.WriteAllBytes(İndirmeKlasörü + kimlik + "\\" + kontrol_edilmiş_adı, çıktı_e);
+                                File.WriteAllBytes(EkDosyaslarıKlasörü + kimlik + "\\" + kontrol_edilmiş_adı, çıktı_e);
                             }
                         }
                     }
                 }
-
-                byte[] çıktı_d = depo.YazıyaDönüştür().BaytDizisine();
-                if (ParolaAes != null) çıktı_d = çıktı_d.Karıştır(ParolaAes);
-                File.WriteAllBytes(İndirmeKlasörü + kimlik + "\\Depo.mup", çıktı_d);
             }
 
-            foreach (string kls in Directory.GetDirectories(İndirmeKlasörü, "_*", SearchOption.TopDirectoryOnly))
+            //Önceden kalma uid leri silme
+            foreach (IDepo_Eleman biri in depo["Liste"].Elemanları)
             {
-                if (!MevcutEpostalar.Contains(kls)) Klasör.Sil(kls);
+                if (İstenen_uid_ler.Contains(biri.Adı)) continue;
+                biri.Sil(null);
             }
-        }
-        public void İşaretle(uint UID, bool Okundu)
-        {
-            Bağlan(false);
 
-            MailKit.UniqueId uid = new MailKit.UniqueId(UID);
-            if (Okundu) GelenKutusu.Store(uid, new MailKit.StoreFlagsRequest(MailKit.StoreAction.Add, MailKit.MessageFlags.Seen) { Silent = true });
-            else GelenKutusu.Store(uid, new MailKit.StoreFlagsRequest(MailKit.StoreAction.Remove, MailKit.MessageFlags.Seen) { Silent = true });
-        }
-        public void Sil(uint UID)
-        {
-            Bağlan(false);
+            foreach (string kls in Directory.GetDirectories(EkDosyaslarıKlasörü, "_*", SearchOption.TopDirectoryOnly))
+            {
+                if (!EkleriAl) Klasör.Sil(kls);
+                else
+                {
+                    int knm = kls.LastIndexOf("\\_");
+                    if (knm < 0) continue;
 
-            MailKit.UniqueId uid = new MailKit.UniqueId(UID);
-            GelenKutusu.Store(uid, new MailKit.StoreFlagsRequest(MailKit.StoreAction.Add, MailKit.MessageFlags.Deleted) { Silent = true });
-            Klasör.Sil(İndirmeKlasörü + @"_" + UID);
+                    string uid_ = kls.Substring(knm + 2);
+                    if (depo.Oku("Liste/" + uid_).BoşMu()) Klasör.Sil(kls);
+                }
+            }
+
+            byte[] çıktı_d = depo.YazıyaDönüştür().BaytDizisine();
+            if (ParolaAes != null) çıktı_d = çıktı_d.Karıştır(ParolaAes);
+            Klasör.Oluştur(EkDosyaslarıKlasörü);
+            File.WriteAllBytes(_EpostalarıYenile_DepoDosyasıAdı_(KlasörAdı), çıktı_d);
+        }
+        public void İşaretle(string KlasörAdı, uint UID, bool Okundu)
+        {
+            IMailFolder mf = KlasörüAç(KlasörAdı, true);
+            _EpostalarıYenile_DepoDosyasınıAç_UIDyiSil_(KlasörAdı, UID.ToString());
+
+            UniqueId uid = new UniqueId(UID);
+            if (Okundu) mf.Store(uid, new StoreFlagsRequest(StoreAction.Add, MessageFlags.Seen) { Silent = true });
+            else mf.Store(uid, new StoreFlagsRequest(StoreAction.Remove, MessageFlags.Seen) { Silent = true });
+        }
+        public string Taşı(uint UID, string KaynakKlasör, string HedefKlasör)
+        {
+            _EpostalarıYenile_DepoDosyasınıAç_UIDyiSil_(KaynakKlasör, UID.ToString());
+
+            IMailFolder Hedef = KlasörüAç(HedefKlasör, true), Kaynak = KlasörüAç(KaynakKlasör, true);
+            UniqueId? yeni = Kaynak.MoveTo(new UniqueId(UID), Hedef);
+            return yeni.ToString();
+        }
+        public void Sil(string KlasörAdı, uint UID)
+        {
+            IMailFolder mf = KlasörüAç(KlasörAdı, true);
+            _EpostalarıYenile_DepoDosyasınıAç_UIDyiSil_(KlasörAdı, UID.ToString());
+
+            UniqueId uid = new UniqueId(UID);
+            mf.Store(uid, new StoreFlagsRequest(StoreAction.Add, MessageFlags.Deleted) { Silent = true });
+            List<UniqueId> l = new List<UniqueId> { uid };
+            mf.Expunge(l);
         }
 
         #region IDisposable

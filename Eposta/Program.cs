@@ -21,7 +21,7 @@ namespace Eposta
 
         static void Main(string[] BaşlangıçParamaetreleri)
         {
-            if (BaşlangıçParamaetreleri != null && BaşlangıçParamaetreleri[0] == "YeniYazilimKontrolu")
+            if (BaşlangıçParamaetreleri != null && BaşlangıçParamaetreleri.Length == 1 && BaşlangıçParamaetreleri[0] == "YeniYazilimKontrolu")
             {
                 YeniYazılımKontrolü_ YeniYazılımKontrolü = new YeniYazılımKontrolü_();
                 YeniYazılımKontrolü.Başlat(new Uri("https://github.com/ArgeMup/Eposta/blob/main/Eposta/bin/Release/Eposta.exe?raw=true"));

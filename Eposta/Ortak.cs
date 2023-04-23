@@ -107,7 +107,7 @@ namespace Eposta
             }
 
             IMailFolder mf;
-            if (KlasörAdı.BoşMu(true)) mf = İstemci.Inbox;
+            if (KlasörAdı.BoşMu(true) || KlasörAdı == "Gelen Kutusu") mf = İstemci.Inbox;
             else
             {
                 string[] dizi = KlasörAdı.Split(İstemci.Inbox.DirectorySeparator);
@@ -124,8 +124,9 @@ namespace Eposta
 
             if (mf == null) throw new Exception("Hatalı Klasör Adı " + KlasörAdı);
             if (YazmaİzniGerekiyor && mf.IsOpen && mf.Access != FolderAccess.ReadWrite) mf.Close();
-            if (!mf.IsOpen) mf.Open(YazmaİzniGerekiyor ? FolderAccess.ReadWrite : FolderAccess.ReadOnly);
-
+            if (mf.IsOpen) mf.Check();
+            else mf.Open(YazmaİzniGerekiyor ? FolderAccess.ReadWrite : FolderAccess.ReadOnly);
+             
             if (!mf.IsOpen) throw new Exception("Klasör açılamadı " + KlasörAdı);
             else if (YazmaİzniGerekiyor && mf.Access != FolderAccess.ReadWrite) throw new Exception("Klasör okuma yazma izni ile açılamadı " + KlasörAdı);
 
@@ -245,8 +246,9 @@ namespace Eposta
                         }
                         else
                         {
-                            string asıl_adı = D_DosyaKlasörAdı.Düzelt(Girdi.ContentDisposition?.FileName ?? Girdi.ContentType.Name);
+                            string asıl_adı = Girdi.ContentDisposition?.FileName ?? Girdi.ContentType.Name;
                             if (string.IsNullOrWhiteSpace(asıl_adı)) return;
+                            asıl_adı = D_DosyaKlasörAdı.Düzelt(asıl_adı);
 
                             Klasör.Oluştur(ÇıktıDosyalarıKlasörü + kimlik);
                             string kontrol_edilmiş_adı = asıl_adı;

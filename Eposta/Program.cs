@@ -19,8 +19,17 @@ namespace Eposta
         static byte[] ParolaAes = null;
         static string KendisiİçinBenzersizAnahtar;
 
-        static void Main(string[] args)
+        static void Main(string[] BaşlangıçParamaetreleri)
         {
+            if (BaşlangıçParamaetreleri != null && BaşlangıçParamaetreleri[0] == "YeniYazilimKontrolu")
+            {
+                YeniYazılımKontrolü_ YeniYazılımKontrolü = new YeniYazılımKontrolü_();
+                YeniYazılımKontrolü.Başlat(new Uri("https://github.com/ArgeMup/Eposta/blob/main/Eposta/bin/Release/Eposta.exe?raw=true"));
+                while (!YeniYazılımKontrolü.KontrolTamamlandı) Thread.Sleep(1000);
+                YeniYazılımKontrolü.Durdur();
+                return;
+            }
+
             W32_Konsol.KapatıldığındaHaberVer(UygulamaKapatıldı);
             GerekliDosyalar.Başlat();
 
@@ -172,7 +181,7 @@ namespace Eposta
                             Başlat_Alıcı();
 
                             Alıcı.EpostalarıYenile(
-                                komut.Oku(null, null, 0), //klasör adı
+                                komut.Oku(null, "Gelen Kutusu", 0), //klasör adı
                                 komut.Oku_Bit(null, false, 1), //Sadece Okunmamışlar
                                 komut.Oku_TarihSaat(null, DateTime.MinValue, 2),
                                 komut.Oku_TarihSaat(null, DateTime.MaxValue, 3),
@@ -217,7 +226,7 @@ namespace Eposta
                     }
                     catch (Exception ex)
                     {
-                        Depo_Komut["Cevaplar/" + komut.Adı].İçeriği = new string[] { "Hatalı", ex.Message.TrimEnd('\r', '\n') };
+                        Depo_Komut["Cevaplar/" + komut.Adı].İçeriği = new string[] { "Hatalı", ex.ToString().TrimEnd('\r', '\n') };
                     }
                 }
             }

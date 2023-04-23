@@ -4,7 +4,9 @@ Genel amaçlı eposta gönderme (smtp), alma (imap) uygulaması ArgeMup@yandex.c
 ## Thanks
 Many thanks to the team of the [MailKit project](https://github.com/jstedfast/MailKit) for their great work. Eposta would not be possible without your work!
 
-    Adım 1 - Eposta.exe çalıştırıldığında alttaki dosyayı üretir (eskinin üzerine yazar) ve dosyanın güncellenmesini bekler.
+    Adım 0 - Eposta.exe YeniYazilimKontrolu parametresiyle çalıştırıldığında kontrolü bitirip kapanır.
+
+    Adım 1 - Eposta.exe parametresiz çalıştırıldığında alttaki dosyayı üretir (eskinin üzerine yazar) ve dosyanın güncellenmesini bekler.
         Komut.mup
             Kimlik Kontrolü / Rsa-2048 Açık anahtar - xml - Kısaltma:RsaAçıkAnahtar
 

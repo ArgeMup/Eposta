@@ -110,16 +110,22 @@ namespace Eposta
             if (KlasörAdı.BoşMu(true) || KlasörAdı == "Gelen Kutusu") mf = İstemci.Inbox;
             else
             {
-                string[] dizi = KlasörAdı.Split(İstemci.Inbox.DirectorySeparator);
-                if (dizi == null || dizi.Length != 2) throw new Exception("Hatalı Klasör Adı " + KlasörAdı);
+                string[] dizi = KlasörAdı.Split('|');
+                if (dizi == null || dizi.Length < 2) throw new Exception("Hatalı Klasör Adı " + KlasörAdı);
+                List<string> kls_ler = dizi.ToList();
 
-                FolderNamespace fns = İstemci.PersonalNamespaces.First(x => x.Path == dizi[0]);
+                FolderNamespace fns = İstemci.PersonalNamespaces.First(x => x.Path == kls_ler.First());
                 if (fns == null) throw new Exception("Hatalı Klasör Adı " + KlasörAdı);
 
                 mf = İstemci.GetFolder(fns);
                 if (mf == null) throw new Exception("Hatalı Klasör Adı " + KlasörAdı);
+                kls_ler.RemoveAt(0);
 
-                mf = mf.GetSubfolders(false).First(x => x.FullName == dizi[1]);
+                while (kls_ler.Count > 0)
+                {
+                    mf = mf.GetSubfolders(false).First(x => x.Name == kls_ler.First());
+                    kls_ler.RemoveAt(0);
+                }
             }
 
             if (mf == null) throw new Exception("Hatalı Klasör Adı " + KlasörAdı);
@@ -139,24 +145,42 @@ namespace Eposta
             foreach (var kls in İstemci.PersonalNamespaces)
             {
                 IMailFolder mf = İstemci.GetFolder(kls);
-
                 foreach (IMailFolder mf_alt in mf.GetSubfolders(false))
+                {
+                    _Alt_Klasörü_Al(mf_alt, mf.Name);
+                }
+            }
+
+            void _Alt_Klasörü_Al(IMailFolder EpostaKlasörü, string KlasörAdı)
+            {
+                KlasörAdı += '|' + EpostaKlasörü.Name;
+
+                if (EpostaKlasörü.Exists)
                 {
                     int Toplam = -1, Okunmadı = -1, YeniGelen = -1;
                     ulong Boyut = 0;
 
                     if (Detaylar)
                     {
-                        if (!mf_alt.IsOpen) mf_alt.Open(FolderAccess.ReadOnly);
-                        mf_alt.Status(StatusItems.Count | StatusItems.Recent | StatusItems.Unread | StatusItems.Size);
+                        if (!EpostaKlasörü.IsOpen) EpostaKlasörü.Open(FolderAccess.ReadOnly);
+                        EpostaKlasörü.Status(StatusItems.Count | StatusItems.Recent | StatusItems.Unread | StatusItems.Size);
 
-                        Toplam = mf_alt.Count;
-                        Okunmadı = mf_alt.Unread;
-                        YeniGelen = mf_alt.Recent;
-                        Boyut = mf_alt.Size == null ? 0 : mf_alt.Size.Value;
+                        Toplam = EpostaKlasörü.Count;
+                        Okunmadı = EpostaKlasörü.Unread;
+                        YeniGelen = EpostaKlasörü.Recent;
+                        Boyut = EpostaKlasörü.Size == null ? 0 : EpostaKlasörü.Size.Value;
                     }
 
-                    KomutMupCevaplarKomutDalı[kls.Path + kls.DirectorySeparator + mf_alt.FullName].İçeriği = new string[] { Okunmadı.Yazıya(), Toplam.Yazıya(), YeniGelen.Yazıya(), Boyut.ToString() };
+                    KomutMupCevaplarKomutDalı[KlasörAdı].İçeriği = new string[] { Okunmadı.Yazıya(), Toplam.Yazıya(), YeniGelen.Yazıya(), Boyut.ToString() };
+                }
+
+                IList<IMailFolder> l_EpostaKlasörleri = EpostaKlasörü.GetSubfolders(false);
+                if (l_EpostaKlasörleri != null && l_EpostaKlasörleri.Count > 0)
+                {
+                    foreach (IMailFolder EpostaKlasörü_alt in l_EpostaKlasörleri)
+                    {
+                        _Alt_Klasörü_Al(EpostaKlasörü_alt, KlasörAdı);
+                    }
                 }
             }
         }

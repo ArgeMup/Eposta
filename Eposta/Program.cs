@@ -12,12 +12,11 @@ namespace Eposta
         static DateTime KomutDosyası_DeğiştirilmeTarihi;
         static string KomutDosyası_Yolu = Kendi.Klasörü + @"\Komut.mup";
         static Depo_ Depo_Komut;
-        static DahaCokKarmasiklastirma_ Dçk_Aes;
         static DahaCokKarmasiklastirma_Asimetrik_ Dçk_Rsa;
         static Gönderici_ Gönderici = null;
         static Alıcı_ Alıcı = null;
         static byte[] ParolaAes = null;
-        static string KendisiİçinBenzersizAnahtar;
+        static string KendisiİçinBenzersizAnahtar; //sahip olduğu ile okunan farklı ise kapanır
 
         static void Main(string[] BaşlangıçParamaetreleri)
         {
@@ -33,7 +32,6 @@ namespace Eposta
             W32_Konsol.KapatıldığındaHaberVer(UygulamaKapatıldı);
             GerekliDosyalar.Başlat();
 
-            Dçk_Aes = new DahaCokKarmasiklastirma_();
             Dçk_Rsa = new DahaCokKarmasiklastirma_Asimetrik_(2048);
             KendisiİçinBenzersizAnahtar = Dçk_Rsa.ParolaÜret(5).Taban64e();
 
@@ -60,7 +58,6 @@ namespace Eposta
 #endif
 
             #region Çıkış
-            Dçk_Aes?.Dispose();
             Dçk_Rsa?.Dispose();
             Alıcı?.Dispose();
             #endregion
@@ -219,6 +216,20 @@ namespace Eposta
                             {
                                 Depo_Komut["Cevaplar/" + komut.Adı, 1] = Alıcı.Taşı(taşınacak.Adı.İşaretsizTamSayıya(), taşınacak[0], taşınacak[1]);
                             }
+                        }
+                        else if (komut.Adı.StartsWith("Diğer"))
+                        {
+                            if (ParolaAes == null)
+                            {
+                                ParolaAes = Dçk_Rsa.Düzelt(Depo_Komut["Kimlik Kontrolü/ParolaRsa", 0].Taban64ten());
+                                Depo_Komut.Sil("Kimlik Kontrolü/ParolaRsa");
+                            }
+
+                            string SihirliKelime = Çöz(komut[1]);
+
+                            if (komut[0] != "Kendini Tanıt" || SihirliKelime.BoşMu(true)) throw new Exception("Geçersiz komut");
+
+                            Depo_Komut["Cevaplar/" + komut.Adı, 1] = SihirliKelime.Karıştır(Parola.Yazı);
                         }
                         else throw new Exception("Geçersiz komut");
 

@@ -97,6 +97,7 @@ Many thanks to the team of the [MailKit project](https://github.com/jstedfast/Ma
             (Aynı komutu birden fazla kez çağırabilmek için sonuna birşeyler eklenmelidir)
             Kalıcı Olarak Sil 1 / <Klasör Adı> / UID1
             Kalıcı Olarak Sil ArGeMuP / <Klasör Adı> / UID2 gibi
+            Diğer / Kendini Tanıt / <Sihirli Kelime - ParolaAes>
         Cevaplar / <Son Çalıştırılma Tarihi>    
             Gönder / Başarılı veya Hatalı / Hata Açıklaması
             Kalıcı Olarak Sil / Başarılı veya Hatalı / Hata Açıklaması
@@ -107,6 +108,7 @@ Many thanks to the team of the [MailKit project](https://github.com/jstedfast/Ma
                 Klasör1 / <Okunmamış eposta sayısı> / <Toplam eposta sayısı> / <Yeni gelen eposta sayısı> / <Klasör boyutu - bayt>
                 Klasör2 ...
             Epostaları Yenile / Başarılı veya Hatalı / Hata Açıklaması
+            Diğer / <Sihirli Kelime Parolası Çözülmüş İçerik - Eposta.Parola.Yazı>
 
     Çıktıları Kaydetme Klasörü / Epostaları Yenile / Klasör Adı / Depo.mup (Komutlar çalıştırıldıktan sonra güncel duruma göre üretilir)
         Tipi / Epostaları Yenile / <Klasör Adı> / <Son Çalıştırılma Tarihi>

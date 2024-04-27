@@ -61,16 +61,6 @@ namespace Eposta.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized resource of type System.Byte[].
-        /// </summary>
-        internal static byte[] BouncyCastle_Cryptography {
-            get {
-                object obj = ResourceManager.GetObject("BouncyCastle_Cryptography", resourceCulture);
-                return ((byte[])(obj));
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized resource of type System.Drawing.Icon similar to (Icon).
         /// </summary>
         internal static System.Drawing.Icon Eposta {
@@ -143,29 +133,9 @@ namespace Eposta.Properties {
         /// <summary>
         ///   Looks up a localized resource of type System.Byte[].
         /// </summary>
-        internal static byte[] System_Numerics_Vectors {
-            get {
-                object obj = ResourceManager.GetObject("System_Numerics_Vectors", resourceCulture);
-                return ((byte[])(obj));
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized resource of type System.Byte[].
-        /// </summary>
         internal static byte[] System_Runtime_CompilerServices_Unsafe {
             get {
                 object obj = ResourceManager.GetObject("System_Runtime_CompilerServices_Unsafe", resourceCulture);
-                return ((byte[])(obj));
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized resource of type System.Byte[].
-        /// </summary>
-        internal static byte[] System_Threading_Tasks_Extensions {
-            get {
-                object obj = ResourceManager.GetObject("System_Threading_Tasks_Extensions", resourceCulture);
                 return ((byte[])(obj));
             }
         }

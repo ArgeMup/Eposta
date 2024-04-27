@@ -17,11 +17,8 @@ namespace Eposta
             File.WriteAllText(Kendi.Klasörü + @"\Eposta.exe.config", Properties.Resources.Eposta_exe);
             File.WriteAllBytes(Kendi.Klasörü + @"\MailKit.dll", Properties.Resources.MailKit);
             File.WriteAllBytes(Kendi.Klasörü + @"\MimeKit.dll", Properties.Resources.MimeKit);
-            File.WriteAllBytes(Kendi.Klasörü + @"\BouncyCastle.Cryptography.dll", Properties.Resources.BouncyCastle_Cryptography);
             File.WriteAllBytes(Kendi.Klasörü + @"\System.Buffers.dll", Properties.Resources.System_Buffers);
             File.WriteAllBytes(Kendi.Klasörü + @"\System.Memory.dll", Properties.Resources.System_Memory);
-            File.WriteAllBytes(Kendi.Klasörü + @"\System.Numerics.Vectors.dll", Properties.Resources.System_Numerics_Vectors);
-            File.WriteAllBytes(Kendi.Klasörü + @"\System.Threading.Tasks.Extensions.dll", Properties.Resources.System_Threading_Tasks_Extensions);
             File.WriteAllBytes(Kendi.Klasörü + @"\System.Runtime.CompilerServices.Unsafe.dll", Properties.Resources.System_Runtime_CompilerServices_Unsafe);
         }
     }

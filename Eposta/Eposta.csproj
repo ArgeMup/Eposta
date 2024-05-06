@@ -101,6 +101,7 @@
     <Compile Include="HazirKod_Cdiyez\KlasörDosya.cs" />
     <Compile Include="HazirKod_Cdiyez\Liste.cs" />
     <Compile Include="HazirKod_Cdiyez\Matematiksel.cs" />
+    <Compile Include="HazirKod_Cdiyez\Temkinliİşlemler.cs" />
     <Compile Include="HazirKod_Cdiyez\YanUygulama.cs" />
     <Compile Include="HazirKod_Cdiyez\Çalıştır.cs" />
     <Compile Include="Ortak.cs" />

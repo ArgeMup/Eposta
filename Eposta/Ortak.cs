@@ -187,7 +187,7 @@ namespace Eposta
         }
         string _EpostalarıYenile_DepoDosyasıAdı_(string KlasörAdı)
         {
-            return D_DosyaKlasörAdı.Düzelt(ÇıktılarıKaydetmeKlasörü + "Epostaları Yenile\\" + _KlasörAdıBoşİseDüzelt_(KlasörAdı) + "\\Depo.mup");
+            return D_DosyaKlasörAdı.Düzelt_Tam(ÇıktılarıKaydetmeKlasörü + "Epostaları Yenile\\" + _KlasörAdıBoşİseDüzelt_(KlasörAdı) + "\\Depo.mup");
         }
         Depo_ _EpostalarıYenile_DepoDosyasınıAç_UIDyiSil_(string KlasörAdı, string UID = null)
         {
@@ -269,7 +269,7 @@ namespace Eposta
                         {
                             string asıl_adı = Girdi.ContentDisposition?.FileName ?? Girdi.ContentType.Name;
                             if (string.IsNullOrWhiteSpace(asıl_adı)) return;
-                            asıl_adı = D_DosyaKlasörAdı.Düzelt(asıl_adı);
+                            asıl_adı = D_DosyaKlasörAdı.Düzelt_Bağlantılı(asıl_adı, true);
 
                             Klasör.Oluştur(ÇıktıDosyalarıKlasörü + kimlik);
                             string kontrol_edilmiş_adı = asıl_adı;

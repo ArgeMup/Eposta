@@ -145,7 +145,7 @@ namespace Eposta
             Kilit.ReleaseMutex();
 
 #if DEBUG
-            Depo_Komut.YazıyaDönüştür().Dosyaİçeriği_Yaz("epst.txt");
+            Dosya.Yaz("epst.txt", Depo_Komut.YazıyaDönüştür());
 #else
             byte[] cevap_dizi = Depo_Komut.YazıyaDönüştür().BaytDizisine();
             if (cevap_dizi != null && cevap_dizi.Length > 0) Şube.Gönder(cevap_dizi);
